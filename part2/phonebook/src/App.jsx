@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import Notification from "./components/Notification";
 import personsService from "./services/persons";
 
 const Filter = ({ filter, handleFilter }) => {
@@ -45,7 +46,8 @@ const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [number, setNumber] = useState("");
-  const [filter, setFilter] = useState("a");
+  const [filter, setFilter] = useState("");
+  const [notification, setNotification] = useState(null);
 
   useEffect(()=>{
     personsService
@@ -92,6 +94,10 @@ const App = () => {
         setPersons(persons.concat(savedPerson));
         setNewName("");
         setNumber("");
+        setNotification({ message: `Added ${savedPerson.name} to phonebook`, error: false });
+        setTimeout(()=>{
+          setNotification(null)
+        }, 3000)
       })
   };
 
@@ -102,6 +108,12 @@ const App = () => {
       personsService
         .remove(id)
         .then(deletedPerson => setPersons(persons.filter(person => person.id !== deletedPerson.id)))
+        .catch(err => {
+          setNotification({ message: `Info about ${personToDelete.name} is already deleted.`, error: true })
+          setTimeout(()=>{
+            setNotification(null);
+          }, 3000);
+        })
     }
   }
 
@@ -112,6 +124,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification  notification={notification} />
       <Filter filter={filter} handleFilter={handleFilter} />
       <h2>add a new</h2>
       <PersonForm
