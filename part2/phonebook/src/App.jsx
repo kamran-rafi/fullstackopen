@@ -1,5 +1,6 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
+
+import personsService from "./services/persons";
 
 const Filter = ({ filter, handleFilter }) => {
   return (
@@ -27,12 +28,13 @@ const PersonForm = (props) => {
   );
 };
 
-const Persons = ({ persons }) => {
+const Persons = ({ persons, handleDelete }) => {
   return (
     <ul>
       {persons.map((person) => (
-        <li key={person.name}>
+        <li key={person.id}>
           {person.name} {person.number}
+          <button onClick={()=>handleDelete(person.id)}>delete</button>
         </li>
       ))}
     </ul>
@@ -46,9 +48,9 @@ const App = () => {
   const [filter, setFilter] = useState("a");
 
   useEffect(()=>{
-    axios
-      .get("http://localhost:3001/persons")
-      .then(res => setPersons(res.data))
+    personsService
+      .getAll()
+      .then(initialPersons => setPersons(initialPersons))
   }, []);
 
   const handleNewName = (e) => {
@@ -69,7 +71,13 @@ const App = () => {
     const personExist = persons.find((person) => person.name === newName);
 
     if (personExist) {
-      alert(`${personExist.name} already exists.`);
+      if(window.confirm(`${personExist.name} already exists. Update number?`)){
+        personsService
+          .update(personExist.id, { ...personExist, number: number })
+          .then(updatedPerson => setPersons(
+            persons.map(person => person.id === updatedPerson.id ? updatedPerson : person)
+          ))
+      }
       return;
     }
 
@@ -78,10 +86,24 @@ const App = () => {
       number: number,
     };
 
-    setPersons(persons.concat(newPerson));
-    setNewName("");
-    setNumber("");
+    personsService
+      .create(newPerson)
+      .then(savedPerson => {
+        setPersons(persons.concat(savedPerson));
+        setNewName("");
+        setNumber("");
+      })
   };
+
+  const handleDelete = id => {
+    const personToDelete = persons.find(person => person.id === id);
+
+    if(window.confirm(`Delete ${personToDelete.name} from phonebook?`)){
+      personsService
+        .remove(id)
+        .then(deletedPerson => setPersons(persons.filter(person => person.id !== deletedPerson.id)))
+    }
+  }
 
   const personsToShow = persons.filter((person) =>
     person.name.toLowerCase().includes(filter.toLowerCase()),
@@ -100,7 +122,7 @@ const App = () => {
         handleNumber={handleNumber}
       />
       <h2>Numbers</h2>
-      <Persons persons={personsToShow} />
+      <Persons persons={personsToShow} handleDelete={handleDelete} />
     </div>
   );
 };
