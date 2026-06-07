@@ -1,13 +1,16 @@
 const blogsRouter = require('express').Router()
+const { tokenExtractor } = require('../utils/middleware')
 
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const { error } = require('../utils/logger')
 
 blogsRouter.get('/', async (request, response) => {
-  const blogs = await Blog.find({})
+  const blogs = await Blog.find({}).populate('userId')
   response.json(blogs)
 })
 
-blogsRouter.post('/', async (request, response) => {
+blogsRouter.post('/', tokenExtractor, async (request, response) => {
 
   const body = request.body
 
@@ -15,11 +18,20 @@ blogsRouter.post('/', async (request, response) => {
     return response.status(400).send({ error: 'invalid blog data' })
   }
 
+  const user = await User.findById(request.user.id)
+  if(!user){
+    return response.status(401).json({ error: 'user does not exist' })
+  }
+
   const blog = new Blog({
-    ...body, likes: body.likes || 0 
+    ...body, likes: body.likes || 0, userId: user.id
   })
 
   const savedBlog = await blog.save()
+
+  user.blogs.push(savedBlog._id)
+
+  await user.save()
 
   response.status(201).json(savedBlog)
 })
@@ -38,8 +50,23 @@ blogsRouter.put('/:id', async (request, response) => {
 
 })
 
-blogsRouter.delete('/:id', async (request, response) => {
+blogsRouter.delete('/:id', tokenExtractor, async (request, response) => {
+  const user = await User.findById(request.user.id)
+  
+  const blogToDelete = request.params.id
+
+  const userHasBlog = user.blogs.find(b => b._id.toString() === blogToDelete)
+
+  if(!userHasBlog){
+    response.status(401).json({ error: 'you are not allowed to delete this blog.' })
+  }
+
   await Blog.findByIdAndDelete(request.params.id)
+
+  user.blogs = user.blogs.filter(b => b._id.toString() !== blogToDelete)
+
+  await user.save()
+
   response.status(204).end()
 })
 
