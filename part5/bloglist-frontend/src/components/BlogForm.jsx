@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TextField, Button } from "@mui/material";
 
 const BlogForm = ({createBlog}) => {
 
@@ -14,33 +15,34 @@ const BlogForm = ({createBlog}) => {
     setUrl("")
   }
 
+  const margin = { margin: "8px" }
+
   return (
     <form onSubmit={newBlog}>
-      <div>
-        <label>
-          title:
-          <input
-            value={title}
-            onChange={({ target }) => setTitle(target.value)}
-          />
-        </label>
+      <div style={margin}>
+        <TextField 
+          label="title"
+          value={title}
+          onChange={({ target }) => setTitle(target.value)}
+        />
       </div>
-      <div>
-        <label>
-          author:
-          <input
-            value={author}
-            onChange={({ target }) => setAuthor(target.value)}
-          />
-        </label>
+      <div style={margin}>
+        <TextField 
+          label="author"
+          value={author}
+          onChange={({ target }) => setAuthor(target.value)}
+        />
       </div>
-      <div>
-        <label>
-          url:
-          <input value={url} onChange={({ target }) => setUrl(target.value)} />
-        </label>
+      <div style={margin}>
+        <TextField 
+          label="url"
+          value={url} 
+          onChange={({ target }) => setUrl(target.value)}
+        />
       </div>
-      <button type="submit">create</button>
+      <div style={margin}>
+        <Button type="submit" variant="contained">create</Button>
+      </div>
     </form>
   );
 };
